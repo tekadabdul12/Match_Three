@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class TileController : MonoBehaviour
 {
+    private GameFlowManager game;
 
     public int id;
 
@@ -108,6 +109,15 @@ public class TileController : MonoBehaviour
 
     #endregion
 
+    public void GenerateRandomTile(int x, int y)
+    {
+        transform.localScale = sizeNormal;
+        IsDestroyed = false;
+
+        ChangeId(Random.Range(0, board.tileTypes.Count), x, y);
+    }
+
+
     #region Adjacent
 
     private TileController GetAdjacent(Vector2 castDir)
@@ -161,10 +171,12 @@ public class TileController : MonoBehaviour
     private void OnMouseDown()
     {
         // Non Selectable conditions
-        if (render.sprite == null || board.IsAnimating)
+        if (render.sprite == null || board.IsAnimating || game.IsGameOver)
         {
             return;
         }
+
+        SoundManager.Instance.PlayTap();
 
         // Already selected this tile?
         if (isSelected)
@@ -181,7 +193,7 @@ public class TileController : MonoBehaviour
 
             else
             {
-                // is this an adjacent tile?
+                // is this an adjacent tiles?
                 if (GetAllAdjacentTiles().Contains(previousSelected))
                 {
                     TileController otherTile = previousSelected;
@@ -191,11 +203,11 @@ public class TileController : MonoBehaviour
                     SwapTile(otherTile, () => {
                         if (board.GetAllMatches().Count > 0)
                         {
-                            Debug.Log("MATCH FOUND");
                             board.Process();
                         }
                         else
                         {
+                            SoundManager.Instance.PlayWrong();
                             SwapTile(otherTile);
                         }
                     });
@@ -274,6 +286,7 @@ public class TileController : MonoBehaviour
     {
         board = BoardManager.Instance;
         render = GetComponent<SpriteRenderer>();
+        game = GameFlowManager.Instance;
     }
 
     public void ChangeId(int id, int x, int y)
